@@ -29,8 +29,11 @@ public class QuadTree extends StandardGameObject {
     private QuadTree bottomRight = null;
 
     private final Rectangle bounds;
+    private Rectangle queryRectangle;
 
     private final int capacity;
+
+    public static ArrayList<Point> allPoints = new ArrayList<>();
 
     private boolean subdivided = false;
 
@@ -61,6 +64,45 @@ public class QuadTree extends StandardGameObject {
         this.bottomLeft = new QuadTree(this.capacity, new Rectangle(x - w / 2, y, w / 2, h / 2));
         this.bottomRight = new QuadTree(this.capacity, new Rectangle(x, y, w / 2, h / 2));
 
+    }
+
+    public ArrayList<Point> slowQuery(Rectangle queryRect) {
+        this.queryRectangle = queryRect;
+        ArrayList<Point> queryPoints = new ArrayList<>();
+        for (int i = 0; i < allPoints.size(); i++) {
+            Point p = allPoints.get(i);
+            if (p.getBounds().intersects(queryRect)) {
+                queryPoints.add(p);
+            }
+        }
+        return queryPoints;
+    }
+    
+    public void removeColor() {
+        for(Point p : allPoints){
+            p.setColor(Color.WHITE);
+        }
+    }
+
+    public ArrayList<Point> fastQuery(Rectangle queryRect, ArrayList<Point> queryPoints) {
+        this.queryRectangle = queryRect;
+        if (queryRect.intersects(this.bounds)) {
+            for (int i = 0; i < this.points.size(); i++) {
+                Point p = this.points.get(i);
+                if (p.getBounds().intersects(queryRect)) {
+                    queryPoints.add(p);
+                }
+            }
+        }
+
+        if (this.subdivided) {
+            this.topLeft.fastQuery(queryRect, queryPoints);
+            this.topRight.fastQuery(queryRect, queryPoints);
+            this.bottomLeft.fastQuery(queryRect, queryPoints);
+            this.bottomRight.fastQuery(queryRect, queryPoints);
+        }
+
+        return queryPoints;
     }
 
     /**
@@ -107,6 +149,11 @@ public class QuadTree extends StandardGameObject {
 
         g2.setColor(Color.RED);
         g2.draw(this.bounds);
+
+        if (this.queryRectangle != null) {
+            g2.setColor(Color.BLUE);
+            g2.draw(this.queryRectangle);
+        }
 
         //  Iterate through the points and draw them.
         for (int i = 0; i < this.points.size(); i++) {
